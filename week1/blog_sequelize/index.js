@@ -5,7 +5,9 @@ require("./utils/jwt-token")(passport);
 const token = require("./utils/token-generate");
 const jwt = require("jsonwebtoken");
 const { upload } = require("./multer/multer_config");
-
+const mongoose = require("mongoose");
+const { MongoClient } = require("mongodb");
+const User = require("./mongodb/UserModel");
 const app = express();
 const { sequelize } = require("./lib/database-connection");
 const { initRoutes } = require("./routes");
@@ -13,8 +15,7 @@ const HttpException = require("../exceptions/http-exception");
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(upload.array());
-// app.use(express.static("public"));
+
 sequelize
   .authenticate()
   .then(() => {
@@ -30,10 +31,32 @@ initRoutes(app);
 //   console.log(req.file);
 // });
 
-// app.use((req, res, next) => {
-//   const err = new HttpException(404, "Page not Found");
-//   next(err);
-// });
+//DB Connection
+
+const url =
+  "mongodb+srv://pawanrijal10:pawan123@cluster0.ufl6h.mongodb.net/Pawan?retryWrites=true&w=majority";
+mongoose
+  .connect(url, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("Database connected!"))
+  .catch((err) => console.log(err));
+
+app.post("/mongo/create", async (req, res, next) => {
+  try {
+    const user = new User(req.body);
+    const data = await user.save();
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.use((req, res, next) => {
+  const err = new HttpException(404, "Page not Found");
+  next(err);
+});
 
 app.use((err, req, res, next) => {
   console.log(err);
